@@ -110,9 +110,14 @@ export const useCachedFile = (src: string, type: 'video' | 'image') => {
             if (cachedPath) {
                 // ---------- 4.2 格式化缓存路径 ----------
                 // 使用自定义 local:// 协议，避免 file:// 的安全限制
+                // 确保路径以 / 开头，构成 local:/// 格式，避免 Windows 盘符被识别为 host
+                let urlPath = cachedPath.replace(/\\/g, '/');
+                if (!urlPath.startsWith('/')) {
+                    urlPath = '/' + urlPath;
+                }
                 const formattedPath = cachedPath.startsWith('http') 
                     ? cachedPath 
-                    : `local://${cachedPath.replace(/\\/g, '/')}`;
+                    : `local://${urlPath}`;
                 
                 // ---------- 4.3 验证缓存文件完整性 ----------
                 const isValid = await validateLocalFile(formattedPath, type);

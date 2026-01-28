@@ -13,17 +13,14 @@ interface ElectronAPI {
   copyFile: (source: string, dest: string) => Promise<{ success: boolean; error?: string }>;
   saveDraft: (folderPath: string, content: any, meta: any) => Promise<{ success: boolean; error?: string }>;
   trimVideoWhite: (inputPath: string) => Promise<{ success: boolean; path?: string; trimmed?: boolean; error?: string }>;
-  
+
   // Window state
   onMaximize: (callback: () => void) => void;
   onUnmaximize: (callback: () => void) => void;
   removeWindowStateListeners: () => void;
-  
-  // Update related methods... (implied existence from usage)
-  startDownload: (url: string) => void;
-  installUpdate: (filePath: string) => void;
+
+  // App version
   getVersion: () => Promise<string>;
-  checkUpdate: (apiBaseUrl?: string) => Promise<any>;
   platform: string;
 }
 

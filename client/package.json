@@ -1,7 +1,7 @@
 {
   "name": "ai-shortx-client",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "AIShortX客户端",
   "author": "AI ShortX Team",
   "type": "module",
@@ -10,7 +10,7 @@
     "dev": "concurrently -k \"cross-env BROWSER=none npm run react:dev\" \"npm run electron:dev\"",
     "react:dev": "vite",
     "electron:build": "tsc -p electron && node scripts/build-electron.js",
-    "electron:dev": "wait-on tcp:5174 && tsc -p electron && electron .",
+    "electron:dev": "wait-on tcp:5174 && npm run electron:build && electron .",
     "build": "tsc -b && vite build && npm run electron:build",
     "build:backend": "cd ../backend && npm run build",
     "dist": "npm run build:backend && npm run build && electron-builder --config electron-builder.config.cjs",

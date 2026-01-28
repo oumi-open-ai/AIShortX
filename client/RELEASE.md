@@ -47,7 +47,7 @@ npm run dist
 ### 配置文件
 - **构建脚本**: 定义在 [package.json](package.json) 的 `scripts` 字段中。
 - **打包配置**: 定义在 [electron-builder.config.js](electron-builder.config.js) 中。
-    - `appId`: `com.animedrama.client`
+    - `appId`: `com.aishortx.client`
     - `productName`: `AIShortX`
     - `directories.output`: `release` (指定输出目录)
 

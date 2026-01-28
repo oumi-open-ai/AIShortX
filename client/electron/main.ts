@@ -78,7 +78,7 @@ function startBackend() {
 
   // ========== 步骤 3: 生产环境启动后端 ==========
   const backendScript = path.join(backendDir, 'dist', 'index.js');
-  
+
   // 验证后端脚本是否存在
   if (!fs.existsSync(backendScript)) {
     if (fs.existsSync(backendDir)) {
@@ -123,8 +123,8 @@ function startBackend() {
       // 创建后端子进程
       backendProcess = spawn(nodeExecutable, execArgs, {
         cwd: backendDir,
-        env: { 
-          ...process.env, 
+        env: {
+          ...process.env,
           PORT: backendPort.toString(),      // 后端服务端口
           DATABASE_URL: databaseUrl,         // 数据库连接字符串
           UPLOADS_DIR: uploadsDir,           // 上传文件目录
@@ -147,7 +147,7 @@ function startBackend() {
       backendProcess.stdout?.on('data', (data) => {
         console.log(`[后端]: ${data.toString().trim()}`);
       });
-      
+
       // 监听后端错误输出
       backendProcess.stderr?.on('data', (data) => {
         console.error(`[后端错误]: ${data.toString().trim()}`);
@@ -205,7 +205,7 @@ const downloadingRequests = new Map<string, Promise<string>>();
 function getCacheFilePath(url: string, type: 'video' | 'image') {
   // 使用 MD5 生成唯一文件名
   const md5 = crypto.createHash('md5').update(url).digest('hex');
-  
+
   // 提取文件扩展名
   let ext = path.extname(new URL(url).pathname);
   if (!ext || ext.length > 5) {
@@ -213,8 +213,8 @@ function getCacheFilePath(url: string, type: 'video' | 'image') {
     ext = type === 'video' ? '.mp4' : '.png';
   }
 
-  // 缓存目录：文档目录/AnimeDrama/Cache/Videos 或 Images
-  const cacheDir = path.join(app.getPath('documents'), 'AnimeDrama', 'Cache', type === 'video' ? 'Videos' : 'Images');
+  // 缓存目录：文档目录/AIShortX/Cache/Videos 或 Images
+  const cacheDir = path.join(app.getPath('documents'), 'AIShortX', 'Cache', type === 'video' ? 'Videos' : 'Images');
   if (!fs.existsSync(cacheDir)) {
     fs.mkdirSync(cacheDir, { recursive: true });
   }
@@ -230,14 +230,14 @@ function getCacheFilePath(url: string, type: 'video' | 'image') {
  */
 function createWindow() {
   // 确定应用图标路径
-  const iconPath = isDev 
-    ? path.join(__dirname, '../icon.png') 
+  const iconPath = isDev
+    ? path.join(__dirname, '../icon.png')
     : path.join(__dirname, '../../dist/icon.png');
 
   // 确定 preload 脚本路径
-  const preloadPath = isDev
-    ? path.join(__dirname, 'preload.js')
-    : path.join(__dirname, 'preload.cjs');
+  // 无论开发环境还是生产环境，由于 build-electron.js 脚本的处理，
+  // preload 脚本都会被重命名为 .cjs 格式
+  const preloadPath = path.join(__dirname, 'preload.cjs');
   console.log('[Electron] =====================================');
 
   // 创建浏览器窗口
@@ -279,7 +279,7 @@ function createWindow() {
   // ========== 窗口控制 IPC 处理器 ==========
   // 最小化窗口
   ipcMain.on('window-min', () => mainWindow.minimize());
-  
+
   // 最大化/还原窗口
   ipcMain.on('window-max', () => {
     if (mainWindow.isMaximized()) {
@@ -288,7 +288,7 @@ function createWindow() {
       mainWindow.maximize();
     }
   });
-  
+
   // 关闭窗口
   ipcMain.on('window-close', () => mainWindow.close());
 
@@ -470,132 +470,12 @@ function createWindow() {
   });
 
   // ==========================================================================
-  // 应用更新逻辑
+  // 应用版本信息
   // ==========================================================================
 
-  // ========== 1. 获取应用版本号 ==========
+  // ========== 获取应用版本号 ==========
   ipcMain.handle('get-version', () => {
     return app.getVersion();
-  });
-
-  // ========== 2. 检查更新 ==========
-  ipcMain.handle('check-update', async (_event, apiBaseUrlFromRenderer?: string) => {
-    return new Promise((resolve) => {
-      // 确定 API 基础 URL
-      const apiBaseUrl = typeof apiBaseUrlFromRenderer === 'string' && apiBaseUrlFromRenderer.startsWith('http')
-        ? apiBaseUrlFromRenderer
-        : (process.env.VITE_API_BASE_URL || 'http://localhost:3010/api');
-      const updateUrl = `${apiBaseUrl}/updates/latest`;
-      
-      // 发起 HTTP 请求检查更新
-      const request = (updateUrl.startsWith('https') ? https : http).get(updateUrl, (res) => {
-        let data = '';
-        res.on('data', (chunk) => data += chunk);
-        res.on('end', () => {
-          try {
-            const response = JSON.parse(data);
-            if (response.code === 200 && response.data) {
-              const remoteVersion = response.data.version;
-              const currentVersion = app.getVersion();
-
-              // 简单的版本比较（生产环境建议使用 semver 库）
-              if (remoteVersion !== currentVersion) {
-                // 返回更新信息
-                resolve({
-                  updateAvailable: remoteVersion !== currentVersion,
-                  ...response.data
-                });
-              } else {
-                resolve({ updateAvailable: false });
-              }
-            } else {
-              resolve({ updateAvailable: false });
-            }
-          } catch (e) {
-            console.error('检查更新解析错误:', e);
-            resolve({ updateAvailable: false, error: '解析错误' });
-          }
-        });
-      });
-
-      request.on('error', (err) => {
-        console.error('检查更新请求错误:', err);
-        resolve({ updateAvailable: false, error: err.message });
-      });
-    });
-  });
-
-  // ========== 3. 下载更新 ==========
-  ipcMain.on('start-download', (event, downloadUrl: string) => {
-    // 从 URL 提取文件扩展名
-    let ext = path.extname(new URL(downloadUrl).pathname);
-    if (!ext) {
-      // 根据平台设置默认扩展名
-      ext = process.platform === 'win32' ? '.exe' : '.dmg';
-    }
-    
-    // 下载到临时目录
-    const downloadPath = path.join(app.getPath('temp'), `update-${Date.now()}${ext}`);
-    const file = fs.createWriteStream(downloadPath);
-
-    // 根据协议选择 http 或 https
-    const lib = downloadUrl.startsWith('https') ? https : http;
-
-    const request = lib.get(downloadUrl, (response) => {
-      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
-      let receivedBytes = 0;
-
-      response.pipe(file);
-
-      // 监听下载进度
-      response.on('data', (chunk) => {
-        receivedBytes += chunk.length;
-        if (totalBytes > 0) {
-          const progress = (receivedBytes / totalBytes) * 100;
-          mainWindow.webContents.send('download-progress', progress);
-        }
-      });
-
-      // 下载完成
-      file.on('finish', () => {
-        file.close(() => {
-          mainWindow.webContents.send('download-complete', downloadPath);
-        });
-      });
-    });
-
-    // 处理请求错误
-    request.on('error', (err) => {
-      fs.unlink(downloadPath, () => { }); // 删除失败的文件
-      mainWindow.webContents.send('download-error', err.message);
-    });
-
-    // 处理文件写入错误
-    file.on('error', (err) => {
-      fs.unlink(downloadPath, () => { });
-      mainWindow.webContents.send('download-error', err.message);
-    });
-  });
-
-  // ========== 4. 安装更新 ==========
-  ipcMain.on('install-update', (event, filePath: string) => {
-    // 运行安装程序
-    // Windows: 直接运行 exe 文件
-    // Mac: 需要挂载 DMG 并复制应用（这里简化处理）
-
-    if (process.platform === 'win32') {
-      // Windows 平台：启动安装程序（显示安装界面）
-      spawn(filePath, [], {
-        detached: true,  // 独立进程
-        stdio: 'ignore'  // 忽略输入输出
-      }).unref();
-    } else {
-      // 其他平台：使用系统默认方式打开文件
-      shell.openPath(filePath);
-    }
-
-    // 退出当前应用，让安装程序接管
-    app.quit();
   });
 
   // ==========================================================================
@@ -608,17 +488,17 @@ function createWindow() {
     try {
       const { filePath, md5 } = getCacheFilePath(url, type);
       const tmpPath = `${filePath}.tmp`;
-      
+
       // 如果正在下载中（存在 .tmp 文件或在下载队列中），返回 null
       if (downloadingRequests.has(md5) || fs.existsSync(tmpPath)) {
         return null;
       }
-      
+
       // 只有完整的文件才返回路径
       if (fs.existsSync(filePath)) {
         return filePath;
       }
-      
+
       return null;
     } catch (error) {
       console.error('检查缓存错误:', error);
@@ -662,9 +542,9 @@ function createWindow() {
             reject(new Error(`下载失败: ${response.statusCode}`));
             return;
           }
-          
+
           response.pipe(file);
-          
+
           file.on('finish', () => {
             file.close(() => {
               // 原子重命名：只有下载完成后才重命名为最终路径
@@ -677,7 +557,7 @@ function createWindow() {
               }
             });
           });
-          
+
           file.on('error', (err) => {
             fs.unlink(tmpPath, () => { });
             reject(err);
@@ -776,7 +656,7 @@ app.whenReady().then(() => {
     const url = request.url.replace('local://', '');
     // 解码 URL 编码的路径
     const decodedPath = decodeURIComponent(url);
-    
+
     try {
       // 返回文件路径
       callback({ path: decodedPath });
