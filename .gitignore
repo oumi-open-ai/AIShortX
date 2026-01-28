@@ -20,3 +20,4 @@ Thumbs.db
 /backend/.env
 /backend/uploads
 /backend/prisma/dev.db
+/client/public/electron

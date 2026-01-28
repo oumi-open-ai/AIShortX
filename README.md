@@ -26,6 +26,17 @@
 - **📝 提示词管理**: 支持自定义和优化 AI 提示词 (Prompts)，精准控制画面与剧情生成。
 - **🎨 风格管理**: 支持自定义艺术风格配置，保持作品视觉统一性。
 
+## 📸 界面预览
+
+<div align="center">
+    <img src="images/1.png" alt="Preview 1" width="45%" />
+    <img src="images/2.png" alt="Preview 2" width="45%" />
+    <img src="images/3.png" alt="Preview 3" width="45%" />
+    <img src="images/4.png" alt="Preview 4" width="45%" />
+    <img src="images/5.png" alt="Preview 5" width="45%" />
+    <img src="images/6.png" alt="Preview 6" width="45%" />
+</div>
+
 ## 🛠 技术栈
 
 ### 🖥️ 客户端 (Client)
@@ -123,7 +134,7 @@ npx prisma studio
 
 ## 💬 交流群
 
-<img src="./qrcode.png" alt="AIShortX开源短剧交流群" width="300" />
+<img src="./images/qrcode.png" alt="AIShortX开源短剧交流群" width="300" />
 
 
 ## 📄 许可证 (License)
