@@ -76,6 +76,10 @@ const config = {
     "category": "public.app-category.entertainment",
     "hardenedRuntime": true,
     "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist",
+    // 公证配置：如果设置了环境变量则启用公证，否则跳过
+    "notarize": !!(process.env.APPLE_ID && process.env.APPLE_APP_SPECIFIC_PASSWORD && process.env.APPLE_TEAM_ID),
     "extraResources": [
       {
         "from": "../backend/dist",
