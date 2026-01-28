@@ -72,7 +72,7 @@ const SettingsPage = () => {
         if (!hasZeroapiConfig) {
           // 自动创建 zeroapi 配置
           const zeroapiConfig = {
-            name: 'zeroapi',
+            name: 'gemini-3-pro-preview',
             provider: 'zeroapi',
             baseUrl: LLM_PROVIDERS.zeroapi.baseUrl,
             modelValue: LLM_PROVIDERS.zeroapi.modelValue,

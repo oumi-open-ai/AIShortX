@@ -431,39 +431,41 @@ export const TaskCenterModal: React.FC<TaskCenterModalProps> = ({ visible, onCan
                           {/* Far Right: Actions */}
                           <div className="w-[40px] flex flex-col items-center justify-center gap-2 h-full">
                               {(isProcessing || isPending) && (
-                                <Popconfirm
-                                  title="确定停止该任务？"
-                                  onConfirm={() => task.id && handleCancelTask(task.id)}
-                                  okText="停止"
-                                  cancelText="取消"
-                                >
-                                  <Button 
-                                    type="text" 
-                                    size="small" 
-                                    danger 
-                                    icon={<StopOutlined />} 
-                                    className="flex items-center justify-center w-8 h-8 hover:bg-red-500/10 rounded-lg"
-                                    title="强制停止"
-                                  />
-                                </Popconfirm>
+                                <Tooltip title="强制停止">
+                                  <Popconfirm
+                                    title="确定停止该任务？"
+                                    onConfirm={() => task.id && handleCancelTask(task.id)}
+                                    okText="停止"
+                                    cancelText="取消"
+                                  >
+                                    <Button 
+                                      type="text" 
+                                      size="small" 
+                                      danger 
+                                      icon={<StopOutlined />} 
+                                      className="flex items-center justify-center w-8 h-8 hover:bg-red-500/10 rounded-lg"
+                                    />
+                                  </Popconfirm>
+                                </Tooltip>
                               )}
                               
                               {(isFailed || isCompleted) && (
-                                 <Popconfirm
-                                   title="确定删除该任务？"
-                                   onConfirm={() => task.id && handleDelete(task.id)}
-                                   okText="删除"
-                                   cancelText="取消"
-                                 >
-                                   <Button 
-                                     type="text" 
-                                     size="small" 
-                                     danger 
-                                     icon={<DeleteOutlined />} 
-                                     className="flex items-center justify-center w-8 h-8 hover:bg-red-500/10 rounded-lg"
-                                     title="删除任务"
-                                   />
-                                 </Popconfirm>
+                                 <Tooltip title="删除任务">
+                                   <Popconfirm
+                                     title="确定删除该任务？"
+                                     onConfirm={() => task.id && handleDelete(task.id)}
+                                     okText="删除"
+                                     cancelText="取消"
+                                   >
+                                     <Button 
+                                       type="text" 
+                                       size="small" 
+                                       danger 
+                                       icon={<DeleteOutlined />} 
+                                       className="flex items-center justify-center w-8 h-8 hover:bg-red-500/10 rounded-lg"
+                                     />
+                                   </Popconfirm>
+                                 </Tooltip>
                               )}
                           </div>
                       </div>

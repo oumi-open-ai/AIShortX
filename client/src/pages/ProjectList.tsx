@@ -262,7 +262,7 @@ const ProjectList = () => {
       if (!hasZeroapiConfig) {
         // 自动创建 zeroapi 配置
         const zeroapiConfig = {
-          name: '零界',
+          name: 'gemini-3-pro-preview',
           provider: 'zeroapi',
           baseUrl: 'https://zeroapi.cn/v1/chat/completions',
           modelValue: 'gemini-3-pro-preview',
