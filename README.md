@@ -53,7 +53,7 @@
 
 ### 1. 克隆项目
 ```bash
-git clone https://github.com/yourusername/ai-shortx.git
+git clone https://github.com/oumi-open-ai/AIShortX.git
 cd ai-shortx
 ```
 
@@ -65,6 +65,9 @@ cd backend
 
 # 安装依赖
 npm install
+
+# 复制配置文件
+cp .env.example .env
 
 # 初始化数据库
 npx prisma generate
@@ -94,12 +97,11 @@ ai_shortx/
 ├── backend/                 # 后端服务源码
 │   ├── config/              # 配置文件
 │   ├── prisma/              # 数据库 Schema 和迁移
-│   ├── src/
-│   │   ├── controllers/     # 业务逻辑控制器
-│   │   ├── routes/          # API 路由定义
-│   │   ├── services/        # 核心服务 (AI, Task, etc.)
-│   │   └── index.ts         # 入口文件
-│   └── uploads/             # 本地文件上传目录 (开发环境)
+│   └── src/
+│       ├── controllers/     # 业务逻辑控制器
+│       ├── routes/          # API 路由定义
+│       ├── services/        # 核心服务 (AI, Task, etc.)
+│       └── index.ts         # 入口文件
 │
 └── client/                  # 客户端源码
     ├── electron/            # Electron 主进程代码
@@ -110,15 +112,6 @@ ai_shortx/
     │   ├── store/           # Zustand 状态管理
     │   └── utils/           # 工具函数
     └── public/              # 静态资源
-```
-
-## ⚙️ 配置说明
-
-### 环境变量 (.env)
-在 `backend` 目录下创建 `.env` 文件（参考 `.env.example`）：
-```env
-PORT=3000
-DATABASE_URL="file:./dev.db"
 ```
 
 ### Prisma Studio
