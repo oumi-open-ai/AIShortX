@@ -1,0 +1,62 @@
+{
+  "Nano-Banana": {
+    "name": "Nano Banana",
+    "type": "image",
+    "capabilities": ["text2image"],
+    "default_provider": "zeroapi",
+    "providers": {
+      "zeroapi": {
+        "name": "零界",
+        "model_value": "gemini-2.5-flash-image"
+      }
+    }
+  },
+  "Nano-Banana-Pro": {
+    "name": "Nano Banana Pro",
+    "type": "image",
+    "capabilities": ["text2image", "image2image"],
+    "default_provider": "zeroapi",
+    "providers": {
+      "zeroapi": {
+        "name": "零界",
+        "model_value": "gemini-3-pro-image-preview"
+      }
+    }
+  },
+  "jimeng-3.0": {
+    "name": "即梦 3.0",
+    "type": "image",
+    "capabilities": ["text2image"],
+    "default_provider": "zeroapi",
+    "providers": {
+      "zeroapi": {
+        "name": "零界",
+        "model_value": "doubao-seedream-3-0-t2i-250415"
+      }
+    }
+  },
+  "jimeng-4.0": {
+    "name": "即梦 4.0",
+    "type": "image",
+    "capabilities": ["text2image", "image2image"],
+    "default_provider": "zeroapi",
+    "providers": {
+      "zeroapi": {
+        "name": "零界",
+        "model_value": "doubao-seedream-4-0-250828"
+      }
+    }
+  },
+  "jimeng-4.5": {
+    "name": "即梦 4.5",
+    "type": "image",
+    "capabilities": ["text2image", "image2image"],
+    "default_provider": "zeroapi",
+    "providers": {
+      "zeroapi": {
+        "name": "零界",
+        "model_value": "doubao-seedream-4-5-251128"
+      }
+    }
+  }
+}

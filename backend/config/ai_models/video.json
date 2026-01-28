@@ -1,0 +1,13 @@
+{
+  "sora-2": {
+    "name": "Sora 2.0",
+    "type": "video",
+    "default_provider": "zeroapi",
+    "providers": {
+      "zeroapi": {
+        "name": "零界",
+        "model_value": "sora-2-all"
+      }
+    }
+  }
+}

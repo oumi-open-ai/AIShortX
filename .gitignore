@@ -1,0 +1,21 @@
+# Dependencies
+node_modules
+
+# Environment Variables
+.env
+!.env.example
+
+# Build Outputs
+/client/release
+/client/dist
+/backend/dist
+
+# Uploads & Storage
+/backend/public/uploads
+
+# System Files
+.DS_Store
+Thumbs.db
+/.vscode
+/backend/.env
+/backend/uploads

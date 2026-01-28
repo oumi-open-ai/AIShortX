@@ -1,0 +1,163 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg-page: var(--bg-page);
+  --color-bg-card: var(--bg-card);
+  --color-bg-element: var(--bg-element);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-primary: var(--color-primary);
+  --color-border: var(--border-color);
+}
+
+:root {
+  /* Light Theme - "Clean Minimalist" */
+  --bg-page: #ffffff;
+  --bg-card: #f4f4f5; /* Zinc 100 */
+  --bg-element: #e4e4e7; /* Zinc 200 */
+  --text-primary: #18181b; /* Zinc 900 */
+  --text-secondary: #71717a; /* Zinc 500 */
+  --color-primary: #0EF283; /* 主色调 */
+  --border-color: #e4e4e7; /* Zinc 200 */
+}
+
+.dark {
+  /* Dark Theme - Custom Dark */
+  --bg-page: #111113; /* 深色背景色 */
+  --bg-card: #212123; /* 浅色背景色 */
+  --bg-element: #323236; /* 更浅的背景色 */
+  --text-primary: #ffffff; /* White */
+  --text-secondary: #a1a1aa; /* Zinc 400 */
+  --color-primary: #0EF283; /* 主色调 */
+  --border-color: #323236; /* 边框色使用更浅的背景色 */
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+  
+  .animate-ping-slow {
+    animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  
+  .animate-bounce-short {
+    animation: bounceShort 0.5s ease-out;
+  }
+  
+  /* Minimalist "Glass" - Subtle transparency without heavy blur */
+  .glass {
+    @apply bg-white/90 border-b border-zinc-200;
+  }
+  
+  .glass-card {
+    @apply bg-white border border-zinc-200 shadow-sm;
+  }
+  
+  .text-gradient-primary {
+    @apply text-primary; /* Flat color is more "simple & atmospheric" */
+  }
+}
+
+/* Dark Mode Specific Overrides */
+.dark .glass {
+  @apply bg-[#17171A]/90 border-[#323236];
+}
+
+.dark .glass-card {
+  @apply bg-[#212123] border-[#323236]/50 shadow-none;
+}
+
+.dark .text-gradient-primary {
+  @apply text-primary;
+}
+
+/* Simple Flat Backgrounds */
+body {
+  background-color: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.dark body {
+  background-image: none; /* Remove complex gradients */
+}
+
+/* Remove Glows for Cleaner Look */
+.ant-btn-primary {
+  box-shadow: none !important; 
+}
+
+.dark .ant-btn-primary {
+  box-shadow: none !important;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bounceShort {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-page); 
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-color); 
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary); 
+}
+
+/* Modal Confirm 按钮样式 */
+.ant-modal-confirm .ant-btn-color-default:hover {
+  border-color: #000 !important;
+  color: #000 !important;
+}
+
+.ant-modal-confirm .ant-btn-primary {
+  background-color: #0EF283 !important;
+  border-color: #0EF283 !important;
+  color: #000000 !important;
+}
+
+.ant-modal-confirm .ant-btn-primary:hover {
+  background-color: #1ffb8f !important;
+  border-color: #1ffb8f !important;
+}

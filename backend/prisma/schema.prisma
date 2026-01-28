@@ -1,0 +1,321 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// ------------------------------------------------------
+// Database Naming Conventions (Strictly Enforced)
+// ------------------------------------------------------
+// 1. Tables: Plural, snake_case (e.g., `users`, `login_tickets`)
+//    Use @@map("table_name") to map the model name.
+//
+// 2. Columns: snake_case (e.g., `created_at`, `user_id`)
+//    Use @map("column_name") to map the field name.
+//
+// 3. Prisma Models/Fields: camelCase (Standard JS/TS convention)
+//    The code interacts with `camelCase` names, Prisma translates 
+//    to `snake_case` for the database automatically.
+// ------------------------------------------------------
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  openid       String    @unique
+  nickname     String?
+  avatar       String?
+  role         String    @default("REGULAR") // UserRole enum replaced by String
+  vipExpireAt  DateTime? @map("vip_expire_at")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  userSettings UserSetting[]
+  userCharacters UserCharacter[]
+  userPromptConfigs UserPromptConfig[]
+  projects       Project[]
+  assets         Asset[]
+  userLLMConfigs UserLLMConfig[]
+
+  @@map("users")
+}
+
+model UserLLMConfig {
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  user        User     @relation(fields: [userId], references: [id])
+  
+  provider    String   // 'deepseek', 'moonshot', 'custom', etc.
+  name        String   // User defined display name
+  modelValue  String   @map("model_value") // 'deepseek-chat', 'gpt-4'
+  baseUrl     String   @map("base_url")
+  apiKey      String   @map("api_key")
+  
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@map("user_llm_configs")
+}
+
+model Style {
+  id             Int      @id @default(autoincrement())
+  name           String
+  imageUrl       String?  @map("image_url")
+  prompt         String
+  userId         Int      @default(0) @map("user_id") // 0: System, >0: User defined
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  projects       Project[]
+
+  @@map("styles")
+}
+
+model Project {
+  id           Int       @id @default(autoincrement())
+  userId       Int       @map("user_id")
+  user         User      @relation(fields: [userId], references: [id])
+  name         String
+  aspectRatio  String    @map("aspect_ratio") // '16:9' | '9:16'
+  styleId      Int?      @map("style_id")
+  style        Style?    @relation(fields: [styleId], references: [id])
+  
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  episodes     ProjectEpisode[]
+  characters   ProjectCharacter[]
+  scenes       ProjectScene[]
+  props        ProjectProp[]
+  storyboards  ProjectStoryboard[]
+  tasks        Task[]
+  assets       Asset[]
+
+  @@map("projects")
+}
+
+model ProjectEpisode {
+  id        Int     @id @default(autoincrement())
+  projectId Int     @map("project_id")
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  name      String
+  script    String?
+  sortOrder Int     @default(0) @map("sort_order")
+
+  storyboards ProjectStoryboard[]
+  characters  ProjectCharacter[]
+  scenes      ProjectScene[]
+  props       ProjectProp[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("project_episodes")
+}
+
+model ProjectCharacter {
+  id             Int       @id @default(autoincrement())
+  projectId      Int       @map("project_id")
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  libraryId      Int?      @map("library_id") // Reference to UserCharacter.id
+  name           String
+  description    String?
+  voice          String?
+  imageUrl       String?   @map("image_url")
+  referenceImageUrl String? @map("reference_image_url")
+  imageStatus    String    @default("idle") @map("image_status")
+  videoUrl       String?   @map("video_url")
+  videoStatus    String    @default("draft") @map("video_status")
+  createStatus   String    @default("idle") @map("create_status")
+  source         String    @default("custom") // 'ai' | 'library' | 'custom'
+  externalId     String?   @map("external_id")
+  originalData   String?   @map("original_data") // JSON string of original character data
+
+  episodeId      Int?            @map("episode_id")
+  episode        ProjectEpisode? @relation(fields: [episodeId], references: [id])
+  
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("project_characters")
+}
+
+model ProjectScene {
+  id             Int       @id @default(autoincrement())
+  projectId      Int       @map("project_id")
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  imageUrl       String?   @map("image_url")
+  referenceImageUrl String? @map("reference_image_url")
+  status         String    @default("idle")
+
+  episodeId      Int?            @map("episode_id")
+  episode        ProjectEpisode? @relation(fields: [episodeId], references: [id])
+  
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  storyboards    ProjectStoryboard[]
+
+  @@map("project_scenes")
+}
+
+model ProjectProp {
+  id             Int       @id @default(autoincrement())
+  projectId      Int       @map("project_id")
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  description    String?
+  imageUrl       String?   @map("image_url")
+  referenceImageUrl String? @map("reference_image_url")
+  status         String    @default("idle")
+
+  episodeId      Int?            @map("episode_id")
+  episode        ProjectEpisode? @relation(fields: [episodeId], references: [id])
+  
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("project_props")
+}
+
+model ProjectStoryboard {
+  id             Int       @id @default(autoincrement())
+  projectId      Int       @map("project_id")
+  project        Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  text           String
+  characterIds   String    @map("character_ids") // JSON string: number[]
+  propIds        String?   @map("prop_ids") // JSON string: number[]
+  sceneId        Int?      @map("scene_id")
+  scene          ProjectScene? @relation(fields: [sceneId], references: [id])
+  duration       Int       @default(0)
+  prompt         String?
+  imageUrl       String?   @map("image_url")
+  imageStatus    String    @default("idle") @map("image_status")
+  videoUrl       String?   @map("video_url")
+  referenceImageUrl String? @map("reference_image_url") // For reference_image mode
+  highResVideoUrl String?  @map("high_res_video_url")
+  highResStatus   String   @default("idle") @map("high_res_status")
+  status         String    @default("draft")
+  errorMsg       String?   @map("error_msg")
+  highResErrorMsg String?  @map("high_res_error_msg")
+  order          Int       @default(0)
+
+  episodeId      Int?            @map("episode_id")
+  episode        ProjectEpisode? @relation(fields: [episodeId], references: [id])
+  
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  @@map("project_storyboards")
+}
+
+
+model Task {
+  id             Int       @id @default(autoincrement())
+  projectId      Int?      @map("project_id")
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  type           String    @default("image") // 任务类型: image | video
+  model          String
+  providerId     String?   @map("provider_id") // 服务渠道ID
+  category       String    // 'character_image' | 'character_video' | 'storyboard_video' | 'upscale'
+  relatedId      Int       @map("related_id")
+  status         String    @default("pending")
+  inputParams    String?   @map("input_params") // JSON string
+  externalTaskId String?   @map("external_task_id")
+  progress       Int       @default(0)
+  error          String?
+  
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  assets         Asset[]
+
+  @@map("tasks")
+}
+
+model Asset {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  projectId Int?     @map("project_id")
+  project   Project? @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  taskId    Int?     @map("task_id")
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  
+  type      String   @default("image") // 'image' | 'video' | 'audio'
+  usage     String?  // 'character' | 'scene' | 'prop' | 'storyboard'
+  relatedId Int?     @map("related_id")
+  source    String   @default("generated") // 'upload' | 'generated'
+  
+  url       String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("assets")
+  @@index([userId])
+  @@index([projectId])
+  @@index([relatedId, usage])
+}
+
+model UserCharacter {
+  id            Int      @id @default(autoincrement())
+  userId        Int      @map("user_id")
+  user          User     @relation(fields: [userId], references: [id])
+  name          String
+  description   String?
+  avatar        String?
+  video         String?
+  source        String   @default("upload") // 'upload' | 'ai'
+  externalId    String?  @map("external_id") // ID from external system (e.g. Sora)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("user_characters")
+}
+
+model UserSetting {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id])
+  key       String   
+  value     String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, key])
+  @@map("user_settings")
+}
+
+
+model SystemPrompt {
+  id        Int      @id @default(autoincrement())
+  type      String
+  name      String
+  content   String
+  isDefault Boolean  @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("system_prompts")
+}
+
+model UserPromptConfig {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  content   String?
+  enabled   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([userId, type])
+  @@map("user_prompt_configs")
+}
