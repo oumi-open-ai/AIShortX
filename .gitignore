@@ -19,3 +19,4 @@ Thumbs.db
 /.vscode
 /backend/.env
 /backend/uploads
+/backend/prisma/dev.db

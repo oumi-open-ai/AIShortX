@@ -1,5 +1,6 @@
 # 🎬 AIShortX
 <div align="center">
+
 [![License: Custom](https://img.shields.io/badge/License-Commercial_Required-red.svg)](#-许可证-license)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
