@@ -3,7 +3,7 @@
  * 负责管理应用窗口、后端进程、文件缓存、更新检查等核心功能
  */
 
-import { app, BrowserWindow, screen, ipcMain, dialog, shell } from 'electron';
+import { app, BrowserWindow, screen, ipcMain, dialog, shell, protocol } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as https from 'https';
@@ -769,6 +769,23 @@ function createWindow() {
 
 // 应用准备就绪后执行
 app.whenReady().then(() => {
+  // ========== 注册自定义协议 local:// ==========
+  // 用于安全地加载本地缓存文件，避免 file:// 协议的安全限制
+  protocol.registerFileProtocol('local', (request, callback) => {
+    // 从 local://path 中提取实际文件路径
+    const url = request.url.replace('local://', '');
+    // 解码 URL 编码的路径
+    const decodedPath = decodeURIComponent(url);
+    
+    try {
+      // 返回文件路径
+      callback({ path: decodedPath });
+    } catch (error) {
+      console.error('加载本地文件失败:', error);
+      callback({ error: -2 }); // 文件未找到错误
+    }
+  });
+
   startBackend();   // 启动后端服务
   createWindow();   // 创建主窗口
 

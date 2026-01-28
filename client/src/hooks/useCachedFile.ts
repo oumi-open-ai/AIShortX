@@ -109,10 +109,10 @@ export const useCachedFile = (src: string, type: 'video' | 'image') => {
             
             if (cachedPath) {
                 // ---------- 4.2 格式化缓存路径 ----------
-                // Electron 返回绝对路径，需要转换为 file:// URL
+                // 使用自定义 local:// 协议，避免 file:// 的安全限制
                 const formattedPath = cachedPath.startsWith('http') 
                     ? cachedPath 
-                    : `file:///${cachedPath.replace(/\\/g, '/')}`;
+                    : `local://${cachedPath.replace(/\\/g, '/')}`;
                 
                 // ---------- 4.3 验证缓存文件完整性 ----------
                 const isValid = await validateLocalFile(formattedPath, type);
