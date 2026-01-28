@@ -65,7 +65,7 @@
 ### 1. 克隆项目
 ```bash
 git clone https://github.com/oumi-open-ai/AIShortX.git
-cd ai-shortx
+cd AIShortX
 ```
 
 ### 2. 后端设置 (Backend)
@@ -104,7 +104,7 @@ npm run dev
 ## 📂 项目结构
 
 ```
-ai_shortx/
+AIShortX/
 ├── backend/                 # 后端服务源码
 │   ├── config/              # 配置文件
 │   ├── prisma/              # 数据库 Schema 和迁移
