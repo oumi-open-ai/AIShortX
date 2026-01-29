@@ -1,7 +1,7 @@
 # 🎬 AIShortX
 <div align="center">
 
-[![License: Custom](https://img.shields.io/badge/License-Commercial_Required-red.svg)](#-许可证-license)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](./LICENSE)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-20232A?style=flat-square&logo=react&logoColor=61DAFB)
 ![Electron](https://img.shields.io/badge/Electron-191970?style=flat-square&logo=Electron&logoColor=white)
@@ -65,7 +65,7 @@
 ### 1. 克隆项目
 ```bash
 git clone https://github.com/oumi-open-ai/AIShortX.git
-cd ai-shortx
+cd AIShortX
 ```
 
 ### 2. 后端设置 (Backend)
@@ -104,7 +104,7 @@ npm run dev
 ## 📂 项目结构
 
 ```
-ai_shortx/
+AIShortX/
 ├── backend/                 # 后端服务源码
 │   ├── config/              # 配置文件
 │   ├── prisma/              # 数据库 Schema 和迁移
