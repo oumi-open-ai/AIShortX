@@ -21,6 +21,9 @@ let backendStarting = false;  // 后端是否正在启动中
 let backendStarted = false;   // 后端是否已启动
 let backendPort = 3000;       // 后端服务端口
 
+// ========== 主窗口引用 ==========
+let mainWindow: BrowserWindow | null = null;  // 主窗口实例
+
 /**
  * 查找可用的端口
  * 从指定端口开始递归查找，直到找到可用端口
@@ -225,72 +228,28 @@ function getCacheFilePath(url: string, type: 'video' | 'image') {
 }
 
 /**
- * 创建主窗口
- * 配置窗口属性、安全设置、IPC 通信等
+ * 注册所有 IPC 处理器
+ * 只在应用启动时调用一次，避免重复注册
  */
-function createWindow() {
-  // 确定应用图标路径
-  const iconPath = isDev
-    ? path.join(__dirname, '../icon.png')
-    : path.join(__dirname, '../../dist/icon.png');
-
-  // 确定 preload 脚本路径
-  // 无论开发环境还是生产环境，由于 build-electron.js 脚本的处理，
-  // preload 脚本都会被重命名为 .cjs 格式
-  const preloadPath = path.join(__dirname, 'preload.cjs');
-  console.log('[Electron] =====================================');
-
-  // 创建浏览器窗口
-  const mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    minWidth: 1100,
-    minHeight: 720,
-    icon: iconPath,
-    frame: false,  // 隐藏原生窗口边框和控制按钮（使用自定义标题栏）
-    show: false,   // 初始不显示，等待 ready-to-show 事件（避免白屏闪烁）
-    backgroundColor: '#09090b',  // 深色主题背景色 (zinc-950)
-    webPreferences: {
-      nodeIntegration: false,    // 禁用 Node.js 集成（安全考虑）
-      contextIsolation: true,    // 启用上下文隔离（安全考虑）
-      webSecurity: true,         // 启用 Web 安全
-      preload: preloadPath,      // 预加载脚本
-      // 性能优化
-      enableWebSQL: false,       // 禁用 WebSQL
-      spellcheck: false,         // 禁用拼写检查
-    },
-  });
-
-  // ========== 窗口显示控制 ==========
-  // 等待页面准备就绪后再显示窗口，防止白屏闪烁
-  mainWindow.once('ready-to-show', () => {
-    mainWindow.show();
-  });
-
-  // ========== 监听窗口状态变化 ==========
-  mainWindow.on('maximize', () => {
-    mainWindow.webContents.send('window-maximized');
-  });
-
-  mainWindow.on('unmaximize', () => {
-    mainWindow.webContents.send('window-unmaximized');
-  });
-
+function registerIPCHandlers() {
   // ========== 窗口控制 IPC 处理器 ==========
-  // 最小化窗口
-  ipcMain.on('window-min', () => mainWindow.minimize());
+  ipcMain.on('window-min', () => {
+    if (mainWindow) mainWindow.minimize();
+  });
 
-  // 最大化/还原窗口
   ipcMain.on('window-max', () => {
-    if (mainWindow.isMaximized()) {
-      mainWindow.unmaximize();
-    } else {
-      mainWindow.maximize();
+    if (mainWindow) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.unmaximize();
+      } else {
+        mainWindow.maximize();
+      }
     }
   });
 
-  // 关闭窗口
-  ipcMain.on('window-close', () => mainWindow.close());
+  ipcMain.on('window-close', () => {
+    if (mainWindow) mainWindow.close();
+  });
 
   // ========== 打开外部链接 ==========
   ipcMain.handle('open-external', async (_event, url: string) => {
@@ -331,6 +290,7 @@ function createWindow() {
 
   // ========== 选择目录对话框 ==========
   ipcMain.handle('select-directory', async () => {
+    if (!mainWindow) return null;
     const result = await dialog.showOpenDialog(mainWindow, {
       properties: ['openDirectory']
     });
@@ -344,19 +304,16 @@ function createWindow() {
   // ========== 保存剪映草稿 ==========
   ipcMain.handle('save-draft', async (event, folderPath: string, content: any, meta: any) => {
     try {
-      // 创建目录
       if (!fs.existsSync(folderPath)) {
         fs.mkdirSync(folderPath, { recursive: true });
       }
 
-      // 写入草稿内容文件
       fs.writeFileSync(
         path.join(folderPath, 'draft_content.json'),
         JSON.stringify(content, null, 4),
         'utf-8'
       );
 
-      // 写入草稿元信息文件
       fs.writeFileSync(
         path.join(folderPath, 'draft_meta_info.json'),
         JSON.stringify(meta, null, 4),
@@ -370,21 +327,18 @@ function createWindow() {
     }
   });
 
-  // 视频“切白”接口：删除从0到第二个关键帧的内容
+  // ========== 视频切白 ==========
   ipcMain.handle('video:trim-white', async (event, inputPath: string) => {
     try {
       if (!fs.existsSync(inputPath)) {
         throw new Error(`File not found: ${inputPath}`);
       }
 
-      // 1. 确定输出路径
       const dir = path.dirname(inputPath);
       const ext = path.extname(inputPath);
       const name = path.basename(inputPath, ext);
       const outputPath = path.join(dir, `${name}_trimmed${ext}`);
 
-      // 2. 使用 ffprobe 获取关键帧
-      // 命令: ffprobe -v error -select_streams v:0 -skip_frame nokey -show_entries frame=pkt_pts_time -of csv=p=0 input.mp4
       const ffprobeCmd = getFfprobePath();
       const ffmpegCmd = getFfmpegPath();
 
@@ -425,8 +379,6 @@ function createWindow() {
       console.log('Keyframes:', keyframes);
 
       if (keyframes.length < 2) {
-        // 如果没有第二个关键帧，说明视频很短或只有一帧，直接返回原路径或报错
-        // 这里选择返回原路径，不做处理
         console.log('Not enough keyframes to trim, returning original path.');
         return { success: true, path: inputPath, trimmed: false };
       }
@@ -434,10 +386,6 @@ function createWindow() {
       const secondKeyframeTime = keyframes[1];
       console.log(`Trimming from ${secondKeyframeTime}s...`);
 
-      // 3. 使用 ffmpeg 裁剪
-      // 命令: ffmpeg -y -ss <time> -i <input> -c copy <output>
-      // -y: 覆盖输出
-      // -ss: 开始时间 (放在 -i 前为了快速定位)
       await new Promise<void>((resolve, reject) => {
         const args = [
           '-y',
@@ -469,32 +417,125 @@ function createWindow() {
     }
   });
 
-  // ==========================================================================
-  // 应用版本信息
-  // ==========================================================================
-
   // ========== 获取应用版本号 ==========
   ipcMain.handle('get-version', () => {
     return app.getVersion();
   });
 
-  // ==========================================================================
-  // 文件缓存管理
-  // ==========================================================================
+  // ========== 检查更新 ==========
+  ipcMain.handle('check-update', async (_event, apiBaseUrlFromRenderer?: string) => {
+    return new Promise((resolve) => {
+      const apiBaseUrl = typeof apiBaseUrlFromRenderer === 'string' && apiBaseUrlFromRenderer.startsWith('http')
+        ? apiBaseUrlFromRenderer
+        : (process.env.VITE_API_BASE_URL || 'http://localhost:3010/api');
+      const updateUrl = `${apiBaseUrl}/updates/latest`;
 
-  // ========== 检查缓存是否存在（不下载）==========
+      const request = (updateUrl.startsWith('https') ? https : http).get(updateUrl, (res) => {
+        let data = '';
+        res.on('data', (chunk) => data += chunk);
+        res.on('end', () => {
+          try {
+            const response = JSON.parse(data);
+            if (response.code === 200 && response.data) {
+              const remoteVersion = response.data.version;
+              const currentVersion = app.getVersion();
+
+              if (remoteVersion !== currentVersion) {
+                resolve({
+                  updateAvailable: remoteVersion !== currentVersion,
+                  ...response.data
+                });
+              } else {
+                resolve({ updateAvailable: false });
+              }
+            } else {
+              resolve({ updateAvailable: false });
+            }
+          } catch (e) {
+            console.error('检查更新解析错误:', e);
+            resolve({ updateAvailable: false, error: '解析错误' });
+          }
+        });
+      });
+
+      request.on('error', (err) => {
+        console.error('检查更新请求错误:', err);
+        resolve({ updateAvailable: false, error: err.message });
+      });
+    });
+  });
+
+  // ========== 下载更新 ==========
+  ipcMain.on('start-download', (event, downloadUrl: string) => {
+    if (!mainWindow) return;
+
+    let ext = path.extname(new URL(downloadUrl).pathname);
+    if (!ext) {
+      ext = process.platform === 'win32' ? '.exe' : '.dmg';
+    }
+
+    const downloadPath = path.join(app.getPath('temp'), `update-${Date.now()}${ext}`);
+    const file = fs.createWriteStream(downloadPath);
+
+    const lib = downloadUrl.startsWith('https') ? https : http;
+
+    const request = lib.get(downloadUrl, (response) => {
+      const totalBytes = parseInt(response.headers['content-length'] || '0', 10);
+      let receivedBytes = 0;
+
+      response.pipe(file);
+
+      response.on('data', (chunk) => {
+        receivedBytes += chunk.length;
+        if (totalBytes > 0) {
+          const progress = (receivedBytes / totalBytes) * 100;
+          mainWindow?.webContents.send('download-progress', progress);
+        }
+      });
+
+      file.on('finish', () => {
+        file.close(() => {
+          mainWindow?.webContents.send('download-complete', downloadPath);
+        });
+      });
+    });
+
+    request.on('error', (err) => {
+      fs.unlink(downloadPath, () => { });
+      mainWindow?.webContents.send('download-error', err.message);
+    });
+
+    file.on('error', (err) => {
+      fs.unlink(downloadPath, () => { });
+      mainWindow?.webContents.send('download-error', err.message);
+    });
+  });
+
+  // ========== 安装更新 ==========
+  ipcMain.on('install-update', (event, filePath: string) => {
+    if (process.platform === 'win32') {
+      spawn(filePath, [], {
+        detached: true,
+        stdio: 'ignore'
+      }).unref();
+    } else {
+      shell.openPath(filePath);
+    }
+
+    app.quit();
+  });
+
+  // ========== 检查缓存是否存在 ==========
   ipcMain.handle('check-cache', async (event, url: string, type: 'video' | 'image') => {
     if (!url || !url.startsWith('http')) return null;
     try {
       const { filePath, md5 } = getCacheFilePath(url, type);
       const tmpPath = `${filePath}.tmp`;
 
-      // 如果正在下载中（存在 .tmp 文件或在下载队列中），返回 null
       if (downloadingRequests.has(md5) || fs.existsSync(tmpPath)) {
         return null;
       }
 
-      // 只有完整的文件才返回路径
       if (fs.existsSync(filePath)) {
         return filePath;
       }
@@ -514,17 +555,14 @@ function createWindow() {
       const { filePath, md5 } = getCacheFilePath(url, type);
       const tmpPath = `${filePath}.tmp`;
 
-      // 检查最终文件是否已存在（下载完成）
       if (fs.existsSync(filePath)) {
         return filePath;
       }
 
-      // 检查并发控制 - 如果已在下载中，等待该下载完成
       if (downloadingRequests.has(md5)) {
         return downloadingRequests.get(md5);
       }
 
-      // 清理之前失败下载留下的临时文件
       if (fs.existsSync(tmpPath)) {
         try {
           fs.unlinkSync(tmpPath);
@@ -533,7 +571,6 @@ function createWindow() {
         }
       }
 
-      // 开始下载
       const downloadPromise = new Promise<string>((resolve, reject) => {
         const file = fs.createWriteStream(tmpPath);
         const request = (url.startsWith('https') ? https : http).get(url, (response) => {
@@ -547,7 +584,6 @@ function createWindow() {
 
           file.on('finish', () => {
             file.close(() => {
-              // 原子重命名：只有下载完成后才重命名为最终路径
               try {
                 fs.renameSync(tmpPath, filePath);
                 resolve(filePath);
@@ -577,7 +613,6 @@ function createWindow() {
       }
     } catch (error) {
       console.error('缓存文件错误:', error);
-      // 如果缓存失败，返回原始 URL，避免应用崩溃
       return url;
     }
   });
@@ -590,13 +625,11 @@ function createWindow() {
       const { filePath } = getCacheFilePath(url, type);
       const tmpPath = `${filePath}.tmp`;
 
-      // 删除主缓存文件（如果存在）
       if (fs.existsSync(filePath)) {
         fs.unlinkSync(filePath);
         console.log(`已清除缓存: ${filePath}`);
       }
 
-      // 删除临时文件（如果存在）
       if (fs.existsSync(tmpPath)) {
         fs.unlinkSync(tmpPath);
         console.log(`已清除临时文件: ${tmpPath}`);
@@ -612,7 +645,6 @@ function createWindow() {
   // ========== 复制文件 ==========
   ipcMain.handle('copy-file', async (event, sourcePath: string, destPath: string) => {
     try {
-      // 确保目标目录存在
       const destDir = path.dirname(destPath);
       if (!fs.existsSync(destDir)) {
         fs.mkdirSync(destDir, { recursive: true });
@@ -624,6 +656,57 @@ function createWindow() {
       console.error('复制文件错误:', error);
       return { success: false, error: error.message };
     }
+  });
+}
+
+/**
+ * 创建主窗口
+ * 配置窗口属性、安全设置、IPC 通信等
+ */
+function createWindow() {
+  // 确定应用图标路径
+  const iconPath = isDev
+    ? path.join(__dirname, '../icon.png')
+    : path.join(__dirname, '../../dist/icon.png');
+
+  // 确定 preload 脚本路径
+  const preloadPath = path.join(__dirname, 'preload.cjs');
+  console.log('[Electron] =====================================');
+
+  // 创建浏览器窗口（使用全局变量）
+  mainWindow = new BrowserWindow({
+    width: 1200,
+    height: 800,
+    minWidth: 1100,
+    minHeight: 720,
+    icon: iconPath,
+    frame: false,  // 隐藏原生窗口边框和控制按钮（使用自定义标题栏）
+    show: false,   // 初始不显示，等待 ready-to-show 事件（避免白屏闪烁）
+    backgroundColor: '#09090b',  // 深色主题背景色 (zinc-950)
+    webPreferences: {
+      nodeIntegration: false,    // 禁用 Node.js 集成（安全考虑）
+      contextIsolation: true,    // 启用上下文隔离（安全考虑）
+      webSecurity: true,         // 启用 Web 安全
+      preload: preloadPath,      // 预加载脚本
+      // 性能优化
+      enableWebSQL: false,       // 禁用 WebSQL
+      spellcheck: false,         // 禁用拼写检查
+    },
+  });
+
+  // ========== 窗口显示控制 ==========
+  // 等待页面准备就绪后再显示窗口，防止白屏闪烁
+  mainWindow.once('ready-to-show', () => {
+    if (mainWindow) mainWindow.show();
+  });
+
+  // ========== 监听窗口状态变化 ==========
+  mainWindow.on('maximize', () => {
+    if (mainWindow) mainWindow.webContents.send('window-maximized');
+  });
+
+  mainWindow.on('unmaximize', () => {
+    if (mainWindow) mainWindow.webContents.send('window-unmaximized');
   });
 
   // ==========================================================================
@@ -665,6 +748,9 @@ app.whenReady().then(() => {
       callback({ error: -2 }); // 文件未找到错误
     }
   });
+
+  // ========== 注册 IPC 处理器（只注册一次）==========
+  registerIPCHandlers();
 
   startBackend();   // 启动后端服务
   createWindow();   // 创建主窗口
